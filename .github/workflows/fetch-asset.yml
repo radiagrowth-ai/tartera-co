@@ -1,0 +1,27 @@
+# Utility: downloads the image URLs listed in ref/fetch.txt into ref/ and commits them.
+# Lets us bring generated images into the repo from hosts our build machine can't reach.
+name: fetch-asset
+on:
+  push:
+    paths: ["ref/fetch.txt"]
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download listed files
+        run: |
+          while read -r name url; do
+            [ -z "$name" ] && continue
+            curl -fsSL -o "ref/$name" "$url"
+            ls -la "ref/$name"
+          done < ref/fetch.txt
+      - name: Commit
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add ref/
+          git diff --cached --quiet || git commit -m "Fetch reference assets [skip ci]"
+          git push
