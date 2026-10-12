@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#1C1813">
 <style>
   :root {
     --cream: #FAF4EA;
@@ -395,6 +396,13 @@
     opacity: 0.75;
   }
   .footer-inner p { font-size: 13px; opacity: 0.6; margin-top: 10px; }
+  @media (max-width: 720px) {
+    /* en el celu: logo, texto y botón centrados (sin hueco a la derecha) */
+    .footer-inner { flex-direction: column; justify-content: center; text-align: center; }
+    .footer-inner > div { display: flex; flex-direction: column; align-items: center; }
+  }
+  /* cuando hay pedido, dejamos lugar para que la barra flotante no tape el pie */
+  body.has-cart footer { padding-bottom: calc(120px + var(--safe-bottom)); }
   .footer-wa {
     display: inline-flex; align-items: center; text-decoration: none;
     background: #25D366; color: #0B2B17; border: 2.5px solid var(--ink);
@@ -446,15 +454,43 @@
     display: flex; flex-direction: column;
     padding-top: var(--safe-top);
     padding-bottom: var(--safe-bottom);
+    /* todo el panel scrollea junto: en el celu así siempre se ven los productos */
+    overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
   }
   .drawer.show { transform: translateX(0); }
   .drawer-head {
     display: flex; align-items: center; justify-content: space-between;
     padding: 18px 20px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 2; background: var(--cream);
   }
+  .drawer-head-actions { display: flex; align-items: center; gap: 6px; }
+  .clear-cart {
+    background: none; border: 1.5px solid var(--border); color: var(--ink-soft);
+    font-weight: 700; font-size: 12.5px; padding: 6px 12px; border-radius: 100px;
+  }
+  .clear-cart:hover { color: var(--red); border-color: var(--red); }
   .drawer-head h3 { font-family: 'Zilla Slab'; font-weight: 700; font-size: 22px; }
   .drawer-head button.close { background: none; border: none; font-size: 22px; color: var(--ink); }
-  .drawer-body { flex: 1; overflow-y: auto; padding: 14px 20px; }
+  .drawer-body { flex: 0 0 auto; padding: 14px 20px; }
+  .drawer-foot { flex: 0 0 auto; }
+  .cart-item .remove {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: 1.5px solid var(--border); color: var(--ink-soft); margin-left: 0;
+  }
+  .cart-item .remove:hover { color: var(--red); border-color: var(--red); }
+  .cart-item .remove svg { width: 16px; height: 16px; }
+  .cart-more {
+    display: block; width: 100%; margin-top: 12px; padding: 11px; border-radius: 100px;
+    background: none; border: 1.5px dashed var(--border); color: var(--ink); font-weight: 700; font-size: 13.5px;
+  }
+  .cart-undo {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    margin-top: 10px; padding: 10px 14px; border-radius: 12px; background: var(--cream-2);
+    font-size: 13px; color: var(--ink-soft);
+  }
+  .cart-undo button { background: none; border: none; color: var(--red); font-weight: 800; font-size: 13px; padding: 0; }
+  .empty-cart .cart-more { max-width: 220px; margin: 16px auto 0; }
   .empty-cart { text-align: center; color: var(--ink-soft); padding: 60px 10px; font-size: 14px; }
   .cart-item {
     display: flex; align-items: center; gap: 12px;
@@ -468,7 +504,6 @@
   .cart-item .meta .nm { font-weight: 700; font-size: 14px; }
   .cart-item .meta .pr { font-size: 12.5px; color: var(--ink-soft); margin-top: 2px; }
   .cart-item .stepper { flex-shrink: 0; }
-  .cart-item .remove { background: none; border: none; color: var(--red); font-size: 12px; font-weight: 700; margin-left: 6px; }
 
   .fulfillment { margin-top: 18px; }
   .fulfillment h4 { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
@@ -861,12 +896,11 @@
 <section class="hero-row wrap">
 <div class="video-hero" aria-label="Video de presentación de Tartera &amp; Co.">
   <div class="video-hero-frame">
-    <video id="heroVideo" class="video-hero-media" autoplay muted loop playsinline preload="metadata">
-      <source src="hero-video.mp4" type="video/mp4">
+    <video id="heroVideo" class="video-hero-media" autoplay muted loop playsinline preload="auto" poster="hero-poster.jpg">
+      <source src="hero-v3.mp4" type="video/mp4">
     </video>
     <div class="video-hero-fade"></div>
     <button class="video-hero-sound" id="heroSoundBtn" aria-label="Activar sonido" onclick="toggleHeroSound()">🔇</button>
-    <button class="video-hero-cta" onclick="document.getElementById('menu').scrollIntoView({behavior:'smooth'})">Ver la carta ↓</button>
   </div>
 </div>
 
@@ -946,7 +980,7 @@
 </footer>
 
 <div class="cart-bar" id="cartBar">
-  <div class="info"><b id="cartCount">0</b> items · <span id="cartSubtotal">$0</span></div>
+  <div class="info"><b id="cartCount">0</b> <span id="cartUnit">tartas</span> · <span id="cartSubtotal">$0</span></div>
   <button class="open-cart" onclick="openDrawer()">Ver pedido</button>
 </div>
 
@@ -954,7 +988,10 @@
 <div class="drawer" id="drawer">
   <div class="drawer-head">
     <h3>Tu pedido</h3>
-    <button class="close" onclick="closeDrawer()">✕</button>
+    <div class="drawer-head-actions">
+      <button class="clear-cart" id="clearCartBtn" onclick="clearCart()" hidden>Vaciar</button>
+      <button class="close" onclick="closeDrawer()" aria-label="Cerrar">✕</button>
+    </div>
   </div>
   <div class="drawer-body" id="drawerBody"></div>
   <div class="drawer-foot">
@@ -1082,6 +1119,7 @@ function cardHtml(item) {
 function changeQty(id, delta, evt) {
   if (delta > 0 && window.tartFx) window.tartFx.sound.play('pop');
   if (delta > 0 && evt) flyToCart(evt, id);
+  if (delta > 0) undoSnapshot = null;
   const current = cart[id] || 0;
   const next = Math.max(0, current + delta);
   if (next === 0) delete cart[id]; else cart[id] = next;
@@ -1163,8 +1201,10 @@ function renderCartBar() {
   const bar = document.getElementById('cartBar');
   const count = totalCount();
   document.getElementById('cartCount').textContent = count;
+  document.getElementById('cartUnit').textContent = count === 1 ? 'tarta' : 'tartas';
   document.getElementById('cartSubtotal').textContent = fmt(subtotal());
   bar.classList.toggle('show', count > 0);
+  document.body.classList.toggle('has-cart', count > 0);
   if (count > prevCartCount) {
     const info = bar.querySelector('.info');
     info.classList.remove('bump');
@@ -1244,11 +1284,50 @@ function updateWaButton() {
     : !when ? 'Elegí para cuándo lo retirás' : 'Pedir por WhatsApp';
 }
 
+/* ---------- editar el pedido desde el propio panel ---------- */
+let undoSnapshot = null;   // copia del pedido antes de quitar/vaciar, para poder deshacer
+let undoLabel = '';
+
+function removeItem(id) {
+  const item = findItem(id);
+  undoSnapshot = { ...cart };
+  undoLabel = `Quitaste ${item ? item.name : 'un producto'}.`;
+  delete cart[id];
+  saveCart();
+  renderAll();
+}
+function clearCart() {
+  if (!cartEntries().length) return;
+  undoSnapshot = { ...cart };
+  undoLabel = 'Vaciaste el pedido.';
+  cart = {};
+  saveCart();
+  renderAll();
+}
+function undoCart() {
+  if (!undoSnapshot) return;
+  cart = undoSnapshot;
+  undoSnapshot = null;
+  saveCart();
+  renderAll();
+}
+function keepChoosing() {
+  closeDrawer();
+  document.getElementById('menu').scrollIntoView({ behavior: 'smooth' });
+}
+
+const TRASH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>';
+
 function renderDrawer() {
   const body = document.getElementById('drawerBody');
   const entries = cartEntries();
+  const undoHtml = undoSnapshot
+    ? `<div class="cart-undo"><span>${undoLabel}</span><button onclick="undoCart()">Deshacer</button></div>`
+    : '';
+  document.getElementById('clearCartBtn').hidden = entries.length === 0;
   if (entries.length === 0) {
-    body.innerHTML = '<div class="empty-cart">Todavía no agregaste nada.<br>Elegí alguna tarta de la carta 🥧</div>';
+    body.innerHTML = `<div class="empty-cart">Todavía no agregaste nada.<br>Elegí alguna tarta de la carta 🥧
+      <button class="cart-more" onclick="keepChoosing()">Ver la carta</button></div>${undoHtml}`;
   } else {
     body.innerHTML = entries.map(({ item, qty }) => `
       <div class="cart-item">
@@ -1258,12 +1337,13 @@ function renderDrawer() {
           <div class="pr">${fmt(item.price)} c/u</div>
         </div>
         <div class="stepper">
-          <button onclick="changeQty('${item.id}', -1)">−</button>
+          <button onclick="changeQty('${item.id}', -1)" aria-label="Uno menos">−</button>
           <span class="qty">${qty}</span>
-          <button onclick="changeQty('${item.id}', 1)">+</button>
+          <button onclick="changeQty('${item.id}', 1)" aria-label="Uno más">+</button>
         </div>
+        <button class="remove" onclick="removeItem('${item.id}')" aria-label="Quitar ${item.name}" title="Quitar">${TRASH_SVG}</button>
       </div>
-    `).join('');
+    `).join('') + undoHtml + `<button class="cart-more" onclick="keepChoosing()">+ Agregar otra tarta</button>`;
   }
 
   document.getElementById('sumSubtotal').textContent = fmt(subtotal());
@@ -1847,6 +1927,18 @@ function toggleHeroSound() {
   btn.textContent = video.muted ? '🔇' : '🔊';
   btn.setAttribute('aria-label', video.muted ? 'Activar sonido' : 'Silenciar');
 }
+
+/* En celulares con ahorro de batería el autoplay puede quedar frenado:
+   lo reintentamos apenas la persona toca la pantalla o el video. */
+(function () {
+  const v = document.getElementById('heroVideo');
+  if (!v) return;
+  const tryPlay = () => { if (v.paused) v.play().catch(() => {}); };
+  tryPlay();
+  v.addEventListener('click', tryPlay);
+  const once = () => { tryPlay(); document.removeEventListener('touchstart', once); };
+  document.addEventListener('touchstart', once, { passive: true });
+})();
 </script>
 </body>
 </html>
