@@ -533,6 +533,7 @@
     border: 2px solid var(--border); background: var(--card-bg); color: var(--ink); font: inherit;
   }
   .when-note { font-size: 11.5px; color: var(--ink-soft); margin-top: 8px; line-height: 1.4; }
+  .when-date-warn { font-size: 11.5px; color: var(--red); font-weight: 700; margin-top: 8px; line-height: 1.4; }
   .pay-note { font-size: 11.5px; color: var(--ink-soft); text-align: center; margin-top: 10px; line-height: 1.4; }
 
   @media (prefers-reduced-motion: reduce) {
@@ -798,7 +799,7 @@
   .video-hero-cta {
     position: absolute;
     left: 50%;
-    bottom: 16px;
+    bottom: 17%;
     transform: translateX(-50%);
     background: rgba(250,244,234,0.97);
     color: #241F1B;
@@ -966,6 +967,8 @@
       </div>
       <input type="date" id="whenDate" class="when-date" aria-label="Fecha de retiro" hidden>
       <p class="when-note">Trabajamos con productos frescos, por eso los pedidos van con anticipación: hasta las 12 h para la cena del mismo día, o con 24 h. El pedido se retira.</p>
+      <p class="when-note" id="whenSundayNote">Atendemos de lunes a sábado. Los domingos no hay servicio.</p>
+      <p class="when-date-warn" id="whenDateWarn" hidden>Ese día no hay servicio (domingo). Elegí otra fecha.</p>
     </fieldset>
     <div class="note-field">
       <label for="orderNote">Notas (opcional)</label>
@@ -1175,7 +1178,8 @@ function renderCartBar() {
 function ymd(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
 function dayLabel(d) { return `${d.toLocaleDateString('es-AR', { weekday: 'long' })} ${d.getDate()}/${d.getMonth() + 1}`; }
-function canOrderToday() { return new Date().getHours() < BRAND.sameDayCutoffHour; }
+function isSunday(d) { return d.getDay() === 0; }
+function canOrderToday() { return !isSunday(new Date()) && new Date().getHours() < BRAND.sameDayCutoffHour; }
 
 function refreshWhenOptions() {
   const now = new Date();
@@ -1183,11 +1187,19 @@ function refreshWhenOptions() {
   const ok = canOrderToday();
   hoy.disabled = !ok;
   document.getElementById('whenHoyOpt').classList.toggle('off', !ok);
-  document.getElementById('whenHoyHint').textContent = ok
-    ? `Pidiendo antes de las ${BRAND.sameDayCutoffHour} h`
-    : `Cerró a las ${BRAND.sameDayCutoffHour} h`;
+  document.getElementById('whenHoyHint').textContent = isSunday(now)
+    ? 'Cerrado los domingos'
+    : (ok ? `Pidiendo antes de las ${BRAND.sameDayCutoffHour} h` : `Cerró a las ${BRAND.sameDayCutoffHour} h`);
   if (!ok && hoy.checked) hoy.checked = false;
-  document.getElementById('whenMananaHint').textContent = dayLabel(addDays(now, 1));
+
+  const manana = document.getElementById('whenManana');
+  const mananaDate = addDays(now, 1);
+  const mananaOk = !isSunday(mananaDate);
+  manana.disabled = !mananaOk;
+  manana.closest('.when-opt').classList.toggle('off', !mananaOk);
+  document.getElementById('whenMananaHint').textContent = mananaOk ? dayLabel(mananaDate) : 'Cerrado los domingos';
+  if (!mananaOk && manana.checked) manana.checked = false;
+
   const date = document.getElementById('whenDate');
   date.min = ymd(addDays(now, 2));
   if (date.value && date.value < date.min) date.value = '';
@@ -1198,11 +1210,27 @@ function pickupText() {
   if (!sel) return null;
   const now = new Date();
   if (sel.value === 'hoy') return canOrderToday() ? `hoy ${dayLabel(now)}, para la cena` : null;
-  if (sel.value === 'manana') return `mañana ${dayLabel(addDays(now, 1))}`;
+  if (sel.value === 'manana') return !isSunday(addDays(now, 1)) ? `mañana ${dayLabel(addDays(now, 1))}` : null;
   const v = document.getElementById('whenDate').value;
   if (!v) return null;
   const [y, m, d] = v.split('-').map(Number);
-  return dayLabel(new Date(y, m - 1, d));
+  const picked = new Date(y, m - 1, d);
+  if (isSunday(picked)) return null;
+  return dayLabel(picked);
+}
+
+function checkWhenDateSunday() {
+  const date = document.getElementById('whenDate');
+  const warn = document.getElementById('whenDateWarn');
+  if (!date.value) { warn.hidden = true; return; }
+  const [y, m, d] = date.value.split('-').map(Number);
+  const picked = new Date(y, m - 1, d);
+  if (isSunday(picked)) {
+    warn.hidden = false;
+    date.value = '';
+  } else {
+    warn.hidden = true;
+  }
 }
 
 function updateWaButton() {
@@ -1289,7 +1317,7 @@ document.querySelectorAll('input[name="when"]').forEach(r => r.addEventListener(
   if (otro && !date.value) date.focus();
   updateWaButton();
 }));
-document.getElementById('whenDate').addEventListener('input', updateWaButton);
+document.getElementById('whenDate').addEventListener('input', () => { checkWhenDateSunday(); updateWaButton(); });
 document.getElementById('footerWa').href = buildWaLink('¡Hola! Quería hacer un pedido. Me interesa la tarta de ');
 document.getElementById('orderNote').addEventListener('input', updateWaButton);
 
